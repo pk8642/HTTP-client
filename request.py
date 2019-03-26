@@ -2,12 +2,12 @@ import socket
 
 
 class Request:
-    def __init__(self, namespace):
-        self.host = namespace[0]
-        self.path = namespace[1]
-        self.method = namespace[2]
-        self.body = namespace[3]
-        self.header = namespace[4]
+    def __init__(self, parser):
+        self.host = parser.host
+        self.path = parser.path
+        self.method = parser.method
+        self.body = parser.body
+        self.header = parser.header
 
     def send_request(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
