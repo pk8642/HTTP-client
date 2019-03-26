@@ -1,4 +1,5 @@
 import argparse
+import re
 
 
 def create_parser():
@@ -31,23 +32,24 @@ class Parser:
         self.body = self.parse_body(namespace.body)
         self.header = self.parse_header(namespace.header)
 
-    def parse_uri(self, uri):
+    @staticmethod
+    def parse_uri(uri):
+        path = '/'
+        if re.search(r'http://', uri):
+            uri = uri[7:]
+        if '/' in uri:
+            path = re.match(r'^/', uri)
         host = uri.split('/')[0]
-        path = ''
         return host, path
 
-    def parse_method(self, method):
+    @staticmethod
+    def parse_method(method):
         return method
 
-    def parse_body(self, body):
+    @staticmethod
+    def parse_body(body):
         return body
 
-    def parse_header(self, header):
+    @staticmethod
+    def parse_header(header):
         return header
-
-    def parse_namespace(self, namespace):
-        host, path = self.parse_uri(namespace.uri)
-        method = self.parse_method(namespace.method)
-        body = self.parse_body(namespace.body)
-        header = self.parse_header(namespace.header)
-        return host, path, method, body, header
