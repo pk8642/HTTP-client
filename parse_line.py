@@ -37,9 +37,9 @@ class Parser:
         path = '/'
         if re.search(r'http://', uri):
             uri = uri[7:]
-        if '/' in uri:
-            path = re.match(r'^/', uri)
         host = uri.split('/')[0]
+        if '/' in uri:
+            path = uri[len(host):]
         return host, path
 
     @staticmethod
