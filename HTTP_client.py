@@ -1,6 +1,7 @@
-from parse_line import create_request
+import parse_line
 import send_request
 
 if __name__ == '__main__':
-    request = create_request()
+    args = parse_line.create_request()
+    request = parse_line.Request(**args)
     send_request.send(request)
