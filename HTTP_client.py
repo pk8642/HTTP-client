@@ -1,7 +1,6 @@
-from parse_line import create_parser
-import request
+from parse_line import create_request
+import send_request
 
 if __name__ == '__main__':
-    parser = create_parser()
-    my_request = request.Request(parser)
-    print(my_request.send_request())
+    request = create_request()
+    send_request.send(request)

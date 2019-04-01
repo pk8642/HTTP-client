@@ -2,7 +2,7 @@ import argparse
 import re
 
 
-def create_parser():
+def create_request():
     parser = argparse.ArgumentParser(
         prog='HTTP client',
         description='''This is a client for receiving and sending data via
@@ -17,15 +17,14 @@ def create_parser():
     parser.add_argument('--body', '-b',
                         help='type the body of request',
                         nargs='*',
-                        default='')
+                        default=[''])
     parser.add_argument('--header', '-hd',
                         help='type the header of request',
-                        nargs='*',
-                        default='')
-    return Parser(parser.parse_args())
+                        nargs='*')
+    return Request(parser.parse_args())
 
 
-class Parser:
+class Request:
     def __init__(self, namespace):
         self.host, self.path = self.parse_uri(namespace.uri[0])
         self.method = self.parse_method(namespace.method[0])
@@ -44,12 +43,17 @@ class Parser:
 
     @staticmethod
     def parse_method(method):
+        methods = ['GET', 'POST', 'PUT', 'HEAD']
+        if method not in methods:
+            raise ValueError('inputted method is incorrect')
         return method
 
     @staticmethod
     def parse_body(body):
-        return body
+        return body[0]
 
     @staticmethod
     def parse_header(header):
-        return header
+        if not header:
+            return ''
+        return '\r\n'.join(header)
