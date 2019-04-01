@@ -1,7 +1,7 @@
 import socket
 
 
-def send_request(request):
+def send(request):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((request.host, 80))
         message = '{0} {1} HTTP/1.1\r\nHost: {2}\r\n{3}\r\n\r\n{4}'.format(
