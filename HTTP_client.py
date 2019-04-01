@@ -3,5 +3,4 @@ import request
 
 if __name__ == '__main__':
     parser = create_parser()
-    my_request = request.Request(parser)
-    print(my_request.send_request())
+    request.send_request(parser)
