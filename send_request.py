@@ -12,7 +12,9 @@ def send(request):
             request.body
         )
         sock.sendall(bytes(message, encoding='utf-8'))
-        result = sock.recv(10000)
+        result = sock.recv(4096)
         while len(result) > 0:
             print(result)
-            result = sock.recv(10000)
+            if len(result) < 4096:
+                break
+            result = sock.recv(4096)

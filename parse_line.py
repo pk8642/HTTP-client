@@ -2,7 +2,7 @@ import argparse
 import re
 
 
-def create_request():
+def create_parser():
     parser = argparse.ArgumentParser(
         prog='HTTP client',
         description='''This is a client for receiving and sending data via
@@ -21,7 +21,7 @@ def create_request():
     parser.add_argument('--header', '-hd',
                         help='type the header of request',
                         nargs='*')
-    return convert_to_dict(parser.parse_args())
+    return parser
 
 
 def convert_to_dict(namespace):
