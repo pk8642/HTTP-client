@@ -35,8 +35,14 @@ def convert_to_dict(namespace):
 
 def parse_uri(uri):
     path = '/'
-    if re.search(r'http://', uri):
-        uri = uri[7:]
+    matches = re.findall('//', uri)
+    if len(matches) > 1:
+        raise ValueError('incorrect uri')
+    elif len(matches) == 1:
+        if re.match('http:', uri):
+            uri = uri[7:]
+        else:
+            raise ValueError('incorrect uri')
     host = uri.split('/')[0]
     if '/' in uri:
         path = uri[len(host):]
