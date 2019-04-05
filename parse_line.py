@@ -64,11 +64,3 @@ def parse_header(header):
     if not header:
         return ''
     return '\r\n'.join(header)
-
-
-class Request:
-    def __init__(self, args):
-        self.host, self.path = args['uri']
-        self.method = args['method']
-        self.body = args['body']
-        self.header = args['header']

@@ -23,7 +23,7 @@ class Test(unittest.TestCase):
         return result
 
     def check_args(self, args):
-        testing_req = parse_line.Request(args)
+        testing_req = send_request.Request(args)
         self.assertEqual(testing_req.host, args['uri'][0])
         self.assertEqual(testing_req.path, args['uri'][1])
         self.assertEqual(testing_req.method, args['method'])
@@ -74,9 +74,6 @@ class Test(unittest.TestCase):
         line = '-u https://github.com -m GET'
         with self.assertRaises(ValueError):
             self.check_parsing_input(line)
-
-    def test_incorrect_input_uri(self):
-        line = '-u www.cyber'
 
 
 if __name__ == '__main__':
