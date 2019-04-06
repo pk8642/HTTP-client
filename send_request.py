@@ -1,5 +1,6 @@
 import socket
 import re
+import time
 
 
 class Request:
@@ -26,6 +27,7 @@ class Request:
     def send(self):
         self.socket.connect((self.host, 80))
         self.socket.sendall(bytes(self.message, encoding=self.charset))
+
         try:
             self.receive()
         finally:
@@ -33,46 +35,58 @@ class Request:
 
     def receive(self):
         headers, message = self.receive_headers()
+        answer = re.search(r'HTTP/\d\.\d (?P<code>\d{3})', headers)
+
+        if answer.group('code')[0] != '2':
+            raise ConnectionError(answer.group('code'))
+
         self.charset = re.findall(r'charset=\S*', headers)[0].split('=')[1]
-        if 'Content-Length' in headers:
-            self.static_recv(
-                int(re.findall(r'Content-Length: \d+', headers)[0].split()[1]),
-                message
-            )
-        elif 'Transfer-Encoding' in headers:
-            self.dynamic_recv(message)
+        content_length = re.search(r'Content-Length: (?P<size>\d+)', headers)
+
+        if content_length:
+            self.static_recv(int(content_length.group('size')))
+        else:
+            self.dynamic_recv()
 
     def receive_headers(self):
         result = self.socket.recv(128).decode(self.charset)
         while '\r\n\r\n' not in result:
             result += self.socket.recv(1).decode(self.charset)
+
         index = result.find('\r\n\r\n')
         message_part = result[index + 4:]
         return result, message_part
 
-    def static_recv(self, length, message):
-        result = message
-        result += self.socket.recv(length - len(message)).decode(self.charset)
-        print(result)
+    def static_recv(self, length):
+        f = open('received.html', 'w', encoding=self.charset)
 
-    def dynamic_recv(self, message):
-        result = message
-        length = 0
+        packet = self.socket.recv(length).decode(self.charset)
 
+        f.write(packet)
+        f.flush()
+        f.close()
+
+    def dynamic_recv(self):
         chunk_size = self.get_chunk_size()
         f = open('received.html', 'w', encoding=self.charset)
-        while chunk_size > 0:
+        while chunk_size != 0:
             data = self.socket.recv(chunk_size).decode(self.charset)
-            self.socket.recv(2).decode(self.charset)
-            result += data
-            f.write(result)
+            size = len(data)
+
+            while size < chunk_size:
+                data += self.socket.recv(chunk_size-size).decode(self.charset)
+                size += len(data)
+            f.write(data)
             f.flush()
-            length += chunk_size
             chunk_size = self.get_chunk_size()
         f.close()
 
     def get_chunk_size(self):
-        hex_chunk_size = self.socket.recv(1).decode(self.charset)
+        hex_chunk_size = self.socket.recv(4).decode()
+        time.sleep(0.1)
+
         while len(re.findall(r'[\da-fA-F]+\r\n', hex_chunk_size)) == 0:
-            hex_chunk_size += self.socket.recv(1).decode(self.charset)
+            hex_chunk_size += self.socket.recv(1).decode()
+            time.sleep(0.01)
+
         return int(hex_chunk_size, 16)
