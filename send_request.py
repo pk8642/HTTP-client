@@ -82,11 +82,11 @@ class Request:
         f.close()
 
     def get_chunk_size(self):
-        hex_chunk_size = self.socket.recv(4).decode()
+        hex_chunk_size = self.socket.recv(4).decode('utf-8')
         time.sleep(0.1)
 
         while len(re.findall(r'[\da-fA-F]+\r\n', hex_chunk_size)) == 0:
-            hex_chunk_size += self.socket.recv(1).decode()
+            hex_chunk_size += self.socket.recv(1).decode('utf-8')
             time.sleep(0.01)
 
         return int(hex_chunk_size, 16)

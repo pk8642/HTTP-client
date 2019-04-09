@@ -12,7 +12,8 @@ def create_parser():
                         help='gets URI to request',
                         nargs=1)
     parser.add_argument('--method', '-m',
-                        help='type the method of request',
+                        help='type the method of request'
+                             '{GET|PUT|POST|HEAD|OPTIONS|DELETE}',
                         nargs=1)
     parser.add_argument('--body', '-b',
                         help='type the body of request',
@@ -50,8 +51,8 @@ def parse_uri(uri):
 
 
 def parse_method(method):
-    methods = ['GET', 'POST', 'PUT', 'HEAD']
-    if method not in methods:
+    pattern = re.compile(r'GET|PUT|POST|HEAD|OPTIONS|DELETE')
+    if pattern.fullmatch(method) is None:
         raise ValueError('inputted method is incorrect')
     return method
 
