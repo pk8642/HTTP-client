@@ -14,7 +14,6 @@ if __name__ == '__main__':
     while True:
         try:
             args = parse_line.convert_to_dict(parser.parse_args(input().split()))
-            print(args)
             if args['close']:
                 raise KeyboardInterrupt
             if args['uri'][0] == request.host:

@@ -2,7 +2,7 @@
 *.zip
 
 # output file
-received.html
+received.*
 
 # JetBrains PyCharm
 .idea/

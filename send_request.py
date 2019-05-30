@@ -13,6 +13,8 @@ class Request:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.message = self.form_message()
         self.charset = 'utf-8'
+        self.type = 'text'
+        self.ext = 'html'
 
     def upd_data(self, args, path=None):
         self.method = args['method']
@@ -40,6 +42,13 @@ class Request:
         headers, message = self.receive_headers()
 
         charset = re.findall(r'charset=\S*', headers)
+
+        type = re.search(r'Content-Type: (?P<type>\w+)/(?P<ext>\w+)', headers)
+
+        if type.group('type') == 'image':
+            self.type = 'image'
+            self.ext = type.group('ext')
+
         if charset:
             self.charset = charset[0].split('=')[1]
         content_length = re.search(r'Content-Length: (?P<size>\d+)', headers)
@@ -59,13 +68,18 @@ class Request:
         return result, message_part
 
     def static_recv(self, length):
-        f = open('received.html', 'w', encoding=self.charset)
+        f = open(f'received.{self.ext}', 'wb')
+        while length > 4000:
+            packet = self.socket.recv(3500)
+            f.write(packet)
+            f.flush()
+            length -= len(packet)
 
-        packet = self.socket.recv(length).decode(self.charset)
-
+        packet = self.socket.recv(length)
         f.write(packet)
-        print(packet)
+        #print(packet)
         f.flush()
+        print('file is ready to be seen')
         f.close()
 
     def dynamic_recv(self):
