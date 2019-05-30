@@ -1,5 +1,5 @@
 # HTTP_client
-Консольное приложение для получения данных по HTTP.<br />
+Консольное приложение для получения данных по HTTP.
 
 ## Параметры запуска
 * `--help [-h]` - Справка по использованию программы.
@@ -12,7 +12,7 @@
 ## Использование
 (os Windows10)<br />
 Программа запускается в командной строке с обязательными параметрами `--uri` и `--method`:<br />
-> C:\HTTP_client>python HTTP_client.py -uri example.org -m GET
+> C:\HTTP_client>python HTTP_client.py --uri example.org -m GET
 
 Далее клиент вернет html вариант ответа в файл `received.html`, либо ошибку
 ## Автор

@@ -22,6 +22,11 @@ def create_parser():
     parser.add_argument('--header', '-hd',
                         help='type the header of request',
                         nargs='*')
+    parser.add_argument('--close', '-cls',
+                        help='closing the socket',
+                        nargs='?',
+                        const=True,
+                        default=False)
     return parser
 
 
@@ -30,8 +35,9 @@ def convert_to_dict(namespace):
         'uri': parse_uri(namespace.uri[0]),
         'method': parse_method(namespace.method[0]),
         'body': parse_body(namespace.body),
-        'header': parse_header(namespace.header)
-    }
+        'header': parse_header(namespace.header),
+        'close': False
+    } if not namespace.close else {'close': True}
 
 
 def parse_uri(uri):

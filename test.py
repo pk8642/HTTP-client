@@ -29,6 +29,7 @@ class Test(unittest.TestCase):
         self.assertEqual(testing_req.method, args['method'])
         self.assertEqual(testing_req.body, args['body'])
         self.assertEqual(testing_req.header, args['header'])
+        testing_req.socket.close()
 
     def check_parsing_input(self, line_input):
         parser = parse_line.create_parser()

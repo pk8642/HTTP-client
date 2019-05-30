@@ -1,3 +1,6 @@
+# archive with task
+*.zip
+
 # output file
 received.html
 

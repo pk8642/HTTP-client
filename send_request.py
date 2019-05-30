@@ -14,6 +14,14 @@ class Request:
         self.message = self.form_message()
         self.charset = 'utf-8'
 
+    def upd_data(self, args, path=None):
+        self.method = args['method']
+        self.body = args['body']
+        self.header = args['header']
+        if path:
+            self.path = path
+        self.message = self.form_message()
+
     def form_message(self):
         message = '{0} {1} HTTP/1.1\r\nHost: {2}\r\n{3}\r\n\r\n{4}'.format(
             self.method,
@@ -25,22 +33,15 @@ class Request:
         return message
 
     def send(self):
-        self.socket.connect((self.host, 80))
         self.socket.sendall(bytes(self.message, encoding=self.charset))
-
-        try:
-            self.receive()
-        finally:
-            self.socket.close()
+        self.receive()
 
     def receive(self):
         headers, message = self.receive_headers()
-        answer = re.search(r'HTTP/\d\.\d (?P<code>\d{3})', headers)
 
-        if answer.group('code')[0] != '2':
-            raise ConnectionError(answer.group('code'))
-
-        self.charset = re.findall(r'charset=\S*', headers)[0].split('=')[1]
+        charset = re.findall(r'charset=\S*', headers)
+        if charset:
+            self.charset = charset[0].split('=')[1]
         content_length = re.search(r'Content-Length: (?P<size>\d+)', headers)
 
         if content_length:
@@ -52,7 +53,7 @@ class Request:
         result = self.socket.recv(128).decode(self.charset)
         while '\r\n\r\n' not in result:
             result += self.socket.recv(1).decode(self.charset)
-
+        print(result)
         index = result.find('\r\n\r\n')
         message_part = result[index + 4:]
         return result, message_part
@@ -63,6 +64,7 @@ class Request:
         packet = self.socket.recv(length).decode(self.charset)
 
         f.write(packet)
+        print(packet)
         f.flush()
         f.close()
 
@@ -77,6 +79,7 @@ class Request:
                 data += self.socket.recv(chunk_size-size).decode(self.charset)
                 size += len(data)
             f.write(data)
+            print(data)
             f.flush()
             chunk_size = self.get_chunk_size()
         f.close()
