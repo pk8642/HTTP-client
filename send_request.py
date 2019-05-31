@@ -41,7 +41,7 @@ class Request:
         self.receive()
 
     def receive(self):
-        headers, message = self.receive_headers()
+        headers = self.receive_headers()
 
         charset = re.findall(r'charset=\S*', headers)
 
@@ -65,9 +65,7 @@ class Request:
         while '\r\n\r\n' not in result:
             result += self.socket.recv(1).decode(self.charset)
         print(result)
-        index = result.find('\r\n\r\n')
-        message_part = result[index + 4:]
-        return result, message_part
+        return result
 
     def static_recv(self, length):
         f = open(f'received.{self.ext}', 'wb')
