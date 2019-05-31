@@ -11,6 +11,8 @@ class Request:
         self.header = args['header']
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(args['timeout'])
+
         self.message = self.form_message()
         self.charset = 'utf-8'
         self.type = 'text'
@@ -71,31 +73,33 @@ class Request:
         f = open(f'received.{self.ext}', 'wb')
         while length > 4000:
             packet = self.socket.recv(3500)
+            print(packet)
             f.write(packet)
             f.flush()
             length -= len(packet)
 
         packet = self.socket.recv(length)
         f.write(packet)
-        #print(packet)
+        # print(packet)
         f.flush()
         print('file is ready to be seen')
         f.close()
 
     def dynamic_recv(self):
         chunk_size = self.get_chunk_size()
-        f = open('received.html', 'w', encoding=self.charset)
+        f = open(f'received.{self.ext}', 'wb')
         while chunk_size != 0:
-            data = self.socket.recv(chunk_size).decode(self.charset)
+            data = self.socket.recv(chunk_size)
             size = len(data)
 
             while size < chunk_size:
-                data += self.socket.recv(chunk_size-size).decode(self.charset)
+                data += self.socket.recv(chunk_size-size)
                 size += len(data)
             f.write(data)
-            print(data)
+            # print(data)
             f.flush()
             chunk_size = self.get_chunk_size()
+        print('file is ready to be seen')
         f.close()
 
     def get_chunk_size(self):

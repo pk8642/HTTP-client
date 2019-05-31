@@ -22,6 +22,11 @@ def create_parser():
     parser.add_argument('--header', '-hd',
                         help='type the header of request',
                         nargs='*')
+    parser.add_argument('--timeout', '-to',
+                        help='set the timeout of waiting response',
+                        nargs='?',
+                        type=float,
+                        default=15)
     parser.add_argument('--close', '-cls',
                         help='closing the socket',
                         nargs='?',
@@ -36,6 +41,7 @@ def convert_to_dict(namespace):
         'method': parse_method(namespace.method[0]),
         'body': parse_body(namespace.body),
         'header': parse_header(namespace.header),
+        'timeout': namespace.timeout,
         'close': False
     } if not namespace.close else {'close': True}
 
