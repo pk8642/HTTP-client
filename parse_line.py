@@ -1,5 +1,4 @@
 import argparse
-import re
 
 
 def create_parser():
@@ -8,69 +7,37 @@ def create_parser():
         description='''This is a client for receiving and sending data via
         HTTP protocol'''
     )
-    parser.add_argument('--uri', '-u',
+    parser.add_argument('uri',
+                        metavar='web-address',
                         help='gets URI to request',
                         nargs=1)
     parser.add_argument('--method', '-m',
                         help='type the method of request'
                              '{GET|PUT|POST|HEAD|OPTIONS|DELETE}',
-                        nargs=1)
+                        nargs='?')
     parser.add_argument('--body', '-b',
                         help='type the body of request',
                         nargs='*',
                         default=[''])
     parser.add_argument('--header', '-hd',
-                        help='type the header of request',
+                        help='type the header of request between "',
                         nargs='*')
     parser.add_argument('--timeout', '-to',
                         help='set the timeout of waiting response',
                         nargs='?',
                         type=float,
                         default=15)
-    parser.add_argument('--close', '-cls',
-                        help='closing the socket',
-                        nargs='?',
-                        const=True,
-                        default=False)
     return parser
 
 
-def convert_to_dict(namespace):
-    return {
-        'uri': parse_uri(namespace.uri[0]),
-        'method': parse_method(namespace.method[0]),
-        'body': parse_body(namespace.body),
-        'header': parse_header(namespace.header),
-        'timeout': namespace.timeout,
-        'close': False
-    } if not namespace.close else {'close': True}
-
-
-def parse_uri(uri):
-    path = '/'
-    matches = re.findall('//', uri)
-    if len(matches) > 1:
-        raise ValueError('incorrect uri')
-    elif len(matches) == 1:
-        if re.match('http:', uri):
-            uri = uri[7:]
-        else:
-            raise ValueError('incorrect uri')
-    host = uri.split('/')[0]
-    if '/' in uri:
-        path = uri[len(host):]
-    return host, path
-
-
-def parse_method(method):
-    pattern = re.compile(r'GET|PUT|POST|HEAD|OPTIONS|DELETE')
-    if pattern.fullmatch(method) is None:
-        raise ValueError('inputted method is incorrect')
-    return method
-
-
-def parse_body(body):
-    return body[0]
+def convert_to_list(namespace):
+    return [
+        namespace.uri[0],
+        namespace.method,
+        namespace.body[0],
+        parse_header(namespace.header),
+        namespace.timeout
+    ]
 
 
 def parse_header(header):
