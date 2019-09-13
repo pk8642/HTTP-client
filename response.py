@@ -2,6 +2,22 @@ import re
 import time
 #  TODO add headers and handle them
 
+def receive_headers(reader):
+    result = ''
+    while result[-4:] != '\r\n\r\n':
+        result += reader.readline().decode('utf8')
+    print(result)
+    return result
+
+
+def get_chunk_size(reader):
+    hex_chunk_size = reader.readline().decode('utf8')
+    if hex_chunk_size == '\r\n':
+        hex_chunk_size += reader.readline().decode('utf8')
+
+    return int(hex_chunk_size, 16)
+
+
 class Response:
     def __init__(self, sock):
         self.sock = sock
@@ -14,31 +30,28 @@ class Response:
         self.ext = None
 
     def receive(self):
-        headers = self.receive_headers()
+        with self.sock.makefile(mode='rb') as fd:
 
-        charset = re.findall(r'charset=\S*', headers)
+            headers = receive_headers(fd)
 
-        type = re.search(r'Content-Type: (?P<type>\w+)/(?P<ext>\w+)', headers)
+            charset = re.findall(r'[Cc]harset=\S*', headers)
 
-        if type.group('type') == 'image':
-            self.type = 'image'
-            self.ext = type.group('ext')
+            type = re.search(r'Content-Type: (?P<type>\w+)/(?P<ext>\w+)', headers)
 
-        if charset:
-            self.charset = charset[0].split('=')[1]
-        content_length = re.search(r'Content-Length: (?P<size>\d+)', headers)
+            if type:
+                self.type = type.group('type')
+                self.ext = type.group('ext')
 
-        if content_length:
-            self.static_recv(int(content_length.group('size')))
-        else:
-            self.dynamic_recv()
+            content_length = re.search(r'Content-Length: (?P<size>\d+)', headers)
 
-    def receive_headers(self):
-        result = self.sock.recv(128).decode('utf8')
-        while '\r\n\r\n' not in result:
-            result += self.sock.recv(1).decode('utf8')
-        print(result)
-        return result
+            if content_length:
+                self.static_recv(fd, int(content_length.group('size')))
+            else:
+                self.dynamic_recv(fd)
+
+            if charset:
+                self.charset = charset[0].split('=')[1]
+                self.response.decode(self.charset)
 
     def _parse_headers(self, headers):
         pass
@@ -52,28 +65,12 @@ class Response:
     def print(self):
         print(self.response)
 
-    def static_recv(self, length):
-        while length > 4000:
-            packet = self.sock.recv(3500)
-            self.response += packet
-            length -= len(packet)
+    def static_recv(self, reader, length):
+        self.response = reader.read(length)
 
-        packet = self.sock.recv(length)
-        self.response += packet
-
-    def dynamic_recv(self):
-        chunk_size = self.get_chunk_size()
+    def dynamic_recv(self, reader):
+        chunk_size = get_chunk_size(reader)
         while chunk_size != 0:
-            self.static_recv(chunk_size)
-            chunk_size = self.get_chunk_size()
-
-    def get_chunk_size(self):
-        hex_chunk_size = self.sock.recv(4).decode('utf-8')
-        # time.sleep(0.1)
-
-        while len(re.findall(r'[\da-fA-F]+\r\n', hex_chunk_size)) == 0:
-            hex_chunk_size += self.sock.recv(1).decode('utf-8')
-            time.sleep(0.01)
-
-        return int(hex_chunk_size, 16)
+            self.response += reader.read(chunk_size)
+            chunk_size = get_chunk_size(reader)
 
