@@ -7,22 +7,11 @@ class Response:
         self.sock = sock
         self.response = b''
 
-        self.Code = None
-        self.Accept = None
-        self.Accept_Charset = None
-        self.Accept_Encoding = None
-        self.Accept_Language = None
-        self.Cache_Control = None
-        self.Connection = None
-        self.Content_Encoding = None
-        self.Content_Language = None
-        self.Content_Length = None
-        self.Content_Type = None
-        self.Transfer_Encoding = None
+        self.headers = {}  # header: value
 
-        self.charset = 'utf-8'
-        self.type = 'text'
-        self.ext = 'html'
+        self.charset = None
+        self.type = None
+        self.ext = None
 
     def receive(self):
         headers = self.receive_headers()
@@ -45,10 +34,14 @@ class Response:
             self.dynamic_recv()
 
     def receive_headers(self):
-        result = self.sock.recv(128).decode(self.charset)
+        result = self.sock.recv(128).decode('utf8')
         while '\r\n\r\n' not in result:
-            result += self.sock.recv(1).decode(self.charset)
+            result += self.sock.recv(1).decode('utf8')
+        print(result)
         return result
+
+    def _parse_headers(self, headers):
+        pass
 
     def save_to_file(self):
         with open(f'received.{self.ext}', 'wb') as f:
@@ -71,18 +64,12 @@ class Response:
     def dynamic_recv(self):
         chunk_size = self.get_chunk_size()
         while chunk_size != 0:
-            data = self.sock.recv(chunk_size)
-            size = len(data)
-
-            while size < chunk_size:  # если не все данные получит
-                data += self.sock.recv(chunk_size - size)
-                size += len(data)
-            self.response += data
+            self.static_recv(chunk_size)
             chunk_size = self.get_chunk_size()
 
     def get_chunk_size(self):
         hex_chunk_size = self.sock.recv(4).decode('utf-8')
-        time.sleep(0.1)
+        # time.sleep(0.1)
 
         while len(re.findall(r'[\da-fA-F]+\r\n', hex_chunk_size)) == 0:
             hex_chunk_size += self.sock.recv(1).decode('utf-8')

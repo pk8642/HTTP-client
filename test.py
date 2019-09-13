@@ -1,6 +1,6 @@
 import unittest
 import parse_line
-import send_request
+import request
 
 
 class Test(unittest.TestCase):
@@ -22,59 +22,58 @@ class Test(unittest.TestCase):
                     result.append(e)
         return result
 
-    def check_args(self, args):
-        testing_req = send_request.Request(args)
-        self.assertEqual(testing_req.host, args['uri'][0])
-        self.assertEqual(testing_req.path, args['uri'][1])
-        self.assertEqual(testing_req.method, args['method'])
-        self.assertEqual(testing_req.body, args['body'])
-        self.assertEqual(testing_req.header, args['header'])
-        testing_req.socket.close()
+    def check_args(self, args, host=None):
+        testing_req = request.Request(*args)
+        self.assertEqual(testing_req._method, args[1])
+        self.assertEqual(testing_req._body, args[2])
+        self.assertEqual(testing_req._headers, args[3])
+        if host:
+            self.assertEqual(testing_req._parse_uri()[0], host)
 
-    def check_parsing_input(self, line_input):
+    def check_parsing_input(self, line_input, host=None):
         parser = parse_line.create_parser()
         args = parser.parse_args(self.parse_args(line_input))
-        self.check_args(parse_line.convert_to_dict(args))
+        self.check_args(parse_line.convert_to_list(args), host)
 
     def test_correct_args(self):
         uri = 'example.org'
-        args = {
-            'uri': parse_line.parse_uri(uri),
-            'method': 'GET',
-            'body': 'some body',
-            'header': 'Content-type: text/html'
-        }
+        args = [
+            uri,
+            'GET',
+            'some body',
+            'Content-type: text/html'
+        ]
         self.check_args(args)
 
     def test_correct_args_two(self):
         uri = 'www.cyberforum.ru/python-network/thread1911394.html'
-        args = {
-            'uri': parse_line.parse_uri(uri),
-            'method': 'GET',
-            'body': 'another sample of body',
-            'header': ['header 1', 'header2', 'header3']
-        }
+        args = [
+            uri,
+            'GET',
+            'another sample of body',
+            ['header 1', 'header2', 'header3']
+        ]
         self.check_args(args)
 
     def test_correct_input(self):
-        line = '-u example.com -m GET'
+        line = 'example.com -m GET'
         self.check_parsing_input(line)
 
     def test_correct_input_two(self):
-        line = '-u www.cyberforum.ru/python/ ' \
+        line = 'www.cyberforum.ru/python/ ' \
                '-m GET -b "some body once told me that world is gonna roll ' \
                'me" -hd "Content-Type: text"'
         self.check_parsing_input(line)
 
     def test_incorrect_input_method(self):
-        line = '-u example.com -m GE'
+        line = 'example.com -m GE'
         with self.assertRaises(ValueError):
-            self.check_parsing_input(line)
+            self.check_parsing_input(line, 'example.com')
 
     def test_incorrect_input_uri(self):
-        line = '-u https://github.com -m GET'
+        line = 'https://github.com -m GET'
         with self.assertRaises(ValueError):
-            self.check_parsing_input(line)
+            self.check_parsing_input(line, 'github.com')
 
 
 if __name__ == '__main__':

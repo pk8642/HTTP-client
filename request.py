@@ -4,27 +4,36 @@ import socket
 #  TODO add headers and handle them
 
 class Request:
-    def __init__(self, uri, method='GET', body='', header='', to=15):
+    def __init__(self, uri, method, body, headers, to=15):
         self._method = method
         self._uri = uri
         self._body = body
-        self._header = header
+        self._headers = headers
         self._timeout = to
 
         self._PORT = 80
 
-    def send_data(self, sock):
+    def send_data(self, sockets):
         host, path = self._parse_uri()
-        self._connect(host, sock)
-        sock.sendall(self._form_message(path, host))
-
-    def _connect(self, host, sock):
         try:
-            sock.connect((host, self._PORT))
-        except OSError:
+            sock = sockets[host]
+        except KeyError:
             sock = socket.socket()
             sock.connect((host, self._PORT))
+            sockets[host] = sock
+        sock.sendall(self._form_message(path, host))
+        return sock
 
+    @property
+    def _method(self):
+        return self.__method
+
+    @_method.setter
+    def _method(self, method):
+        if re.match(r'GET|PUT|POST|HEAD|OPTIONS|DELETE', method) is None:
+            raise ValueError('incorrect method')
+        else:
+            self.__method = method
 
     def _parse_uri(self):
         path = '/'
@@ -35,7 +44,7 @@ class Request:
             if re.match('http:', self._uri):
                 self._uri = self._uri[7:]
             elif re.match('www\.', self._uri):
-                pass
+                self._uri = self._uri[4:]
             else:
                 raise ValueError('incorrect uri')
 
@@ -47,22 +56,7 @@ class Request:
     def _form_message(self, path, host):
         message = f'{self._method} {path} HTTP/1.1\r\n' \
                   f'Host: {host}\r\n' \
-                  f'{self._header}\r\n' \
+                  f'{self._headers}\r\n' \
                   f'\r\n' \
                   f'{self._body}'
-
         return bytes(message, encoding='utf8')
-
-        # self.type = None
-        # self.subtype = None
-        # self.charset = None
-        # self.media_type = self.type, self.subtype, self.charset
-        # # i.e. 'text/html;charset=utf-8'
-        # self.Content_Type = self.media_type
-        #
-        # self.content_coding = None  # i.e. 'gzip'
-        # self.Content_Encoding = self.content_coding
-        #
-        # self.language_tag = None# i.e. 'fr, en-US, es-419, az-Arab'
-        # self.Content_Language = self.language_tag
-        # self.Content_Location = None # TODO

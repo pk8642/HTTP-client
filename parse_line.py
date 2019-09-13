@@ -14,7 +14,8 @@ def create_parser():
     parser.add_argument('--method', '-m',
                         help='type the method of request'
                              '{GET|PUT|POST|HEAD|OPTIONS|DELETE}',
-                        nargs='?')
+                        nargs='?',
+                        default='GET')
     parser.add_argument('--body', '-b',
                         help='type the body of request',
                         nargs='*',
