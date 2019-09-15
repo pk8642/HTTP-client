@@ -1,8 +1,7 @@
-# archive with task
-*.zip
-
-# output file
-received.*
+# nothing else this
+*
+/!*.py
+/!ReadMe.md
 
 # JetBrains PyCharm
 .idea/
