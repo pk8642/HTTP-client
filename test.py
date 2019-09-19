@@ -1,6 +1,7 @@
 import unittest
 import parse_line
 import request
+import  HTTP_client
 
 
 class Test(unittest.TestCase):
@@ -23,12 +24,13 @@ class Test(unittest.TestCase):
         return result
 
     def check_args(self, args, host=None):
-        testing_req = request.Request(*args)
+        if host:
+            _host, _ = HTTP_client.parse_uri(args[0])
+            self.assertEqual(_host, host)
+        testing_req = request.Request(None, None, *args[1:])
         self.assertEqual(testing_req._method, args[1])
         self.assertEqual(testing_req._body, args[2])
         self.assertEqual(testing_req._headers, args[3])
-        if host:
-            self.assertEqual(testing_req._parse_uri()[0], host)
 
     def check_parsing_input(self, line_input, host=None):
         parser = parse_line.create_parser()

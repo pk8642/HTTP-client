@@ -18,9 +18,8 @@ def create_parser():
                         default='GET')
     parser.add_argument('--body', '-b',
                         help='type the body of request',
-                        nargs='*',
-                        default=[''])
-    parser.add_argument('--header', '-hd',
+                        nargs='*')
+    parser.add_argument('--headers', '-hd',
                         help='type the header of request between "',
                         nargs='*')
     parser.add_argument('--timeout', '-to',
@@ -35,13 +34,25 @@ def convert_to_list(namespace):
     return [
         namespace.uri[0],
         namespace.method,
-        namespace.body[0],
-        parse_header(namespace.header),
+        ' '.join(parse_content(namespace.body)),
+        parse_content(namespace.headers),
         namespace.timeout
     ]
 
 
-def parse_header(header):
-    if not header:
+def parse_content(content):
+    if not content:
         return ''
-    return '\r\n'.join(header)
+    _content = []
+    _part = None
+    try:
+        for part in content:
+            if part.endswith('"'):
+                _content.append(f'{_part[1:]} {part[:-1]}')
+            elif part.startswith('"'):
+                _part = part
+            else:
+                _part += ' ' + part
+    except ValueError:
+        print('something wrong with headers')
+    return _content

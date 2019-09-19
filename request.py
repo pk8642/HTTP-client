@@ -1,28 +1,18 @@
 import re
 import socket
+import gzip
 
-#  TODO add headers and handle them
 
 class Request:
-    def __init__(self, uri, method, body, headers, to=15):
+    def __init__(self, host, path, method, body, headers, to=15):
         self._method = method
-        self._uri = uri
+        self._host = host
+        self._path = path
         self._body = body
         self._headers = headers
         self._timeout = to
 
         self._PORT = 80
-
-    def send_data(self, sockets):
-        host, path = self._parse_uri()
-        try:
-            sock = sockets[host]
-        except KeyError:
-            sock = socket.socket()
-            sock.connect((host, self._PORT))
-            sockets[host] = sock
-        sock.sendall(self._form_message(path, host))
-        return sock
 
     @property
     def _method(self):
@@ -35,28 +25,49 @@ class Request:
         else:
             self.__method = method
 
-    def _parse_uri(self):
-        path = '/'
-        matches = re.findall('//', self._uri)
-        if len(matches) > 1:
-            raise ValueError('incorrect uri')
-        elif len(matches) == 1:
-            if re.match('http:', self._uri):
-                self._uri = self._uri[7:]
-            elif re.match('www\.', self._uri):
-                self._uri = self._uri[4:]
-            else:
-                raise ValueError('incorrect uri')
+    def send_data(self, sockets):
+        try:
+            sock = sockets[self._host][0]
+        except KeyError:
+            sock = socket.socket()
+            sock.connect((self._host, self._PORT))
+            sockets[self._host] = (sock, [])
+        sock.settimeout(self._timeout)
+        self._modify_data()
+        msg = self._form_message(self._path, self._host)
+        print(msg + self._body)
+        sock.sendall(msg + self._body)
+        return sock
 
-        host = self._uri.split('/')[0]
-        if '/' in self._uri:
-            path = self._uri[len(host):]
-        return host, path
+    def set_cookies(self, cookies):
+        for cookie in cookies:
+            self._headers.extend(f'Cookie: {cookie}')
+
+    def _modify_data(self):
+        charset = 'utf8'
+        compression = None
+
+        if not self._body.endswith('\r\n\r\n') and len(self._body) > 0:
+            self._body += '\r\n\r\n'
+
+        for header in self._headers:
+            if header.casefold() == 'content-type':
+                charset = header.split('=')[1]
+            elif header.casefold() == 'accept-encoding':
+                compression = header.split(': ')
+
+        self._body = self._body.encode(charset)
+
+        if compression is not None:
+            if compression == 'gzip':
+                gzip.compress(self._body)
+
+        if self._body:
+            self._headers.append(f'Content-Length: {len(self._body-4)}\r\n')
 
     def _form_message(self, path, host):
+        self._headers = '\r\n'.join(self._headers)
         message = f'{self._method} {path} HTTP/1.1\r\n' \
                   f'Host: {host}\r\n' \
-                  f'{self._headers}\r\n' \
-                  f'\r\n' \
-                  f'{self._body}'
+                  f'{self._headers}\r\n'
         return bytes(message, encoding='utf8')
