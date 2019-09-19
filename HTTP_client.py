@@ -47,7 +47,11 @@ if __name__ == '__main__':
                 print('I don\'t know this address :(')
                 continue
 
-            response = Response(sock)
+            if args[0] == 'HEAD':
+                flag = True
+            else:
+                flag = False
+            response = Response(sock, flag)
 
             try:
                 ext_dot_index = path.rindex('.')

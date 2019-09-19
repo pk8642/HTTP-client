@@ -34,8 +34,8 @@ class Request:
             sockets[self._host] = (sock, [])
         sock.settimeout(self._timeout)
         self._modify_data()
+
         msg = self._form_message(self._path, self._host)
-        print(msg + self._body)
         sock.sendall(msg + self._body)
         return sock
 
@@ -63,7 +63,7 @@ class Request:
                 gzip.compress(self._body)
 
         if self._body:
-            self._headers.append(f'Content-Length: {len(self._body-4)}\r\n')
+            self._headers.append(f'Content-Length: {len(self._body - 4)}\r\n')
 
     def _form_message(self, path, host):
         self._headers = '\r\n'.join(self._headers)

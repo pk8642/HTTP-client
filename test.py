@@ -1,7 +1,7 @@
 import unittest
 import parse_line
 import request
-import  HTTP_client
+import HTTP_client
 
 
 class Test(unittest.TestCase):
