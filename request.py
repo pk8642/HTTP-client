@@ -1,6 +1,7 @@
 import re
 import socket
 import gzip
+from datetime import datetime
 
 
 class Request:
@@ -27,21 +28,37 @@ class Request:
 
     def send_data(self, sockets):
         try:
-            sock = sockets[self._host][0]
+            sock = sockets[self._host]
         except KeyError:
             sock = socket.socket()
             sock.connect((self._host, self._PORT))
-            sockets[self._host] = (sock, [])
+            sockets[self._host] = sock
         sock.settimeout(self._timeout)
         self._modify_data()
 
         msg = self._form_message(self._path, self._host)
+        print(msg)
         sock.sendall(msg + self._body)
         return sock
 
     def set_cookies(self, cookies):
+        header = []
         for cookie in cookies:
-            self._headers.extend(f'Cookie: {cookie}')
+            pairs = cookie.split('; ')
+            for i in range(len(pairs), 0, -1):
+                pair = pairs[i]
+                if re.match(r'[Pp]ath', pair):
+                    if not self._host.startswith(pair.split('=')[0]):
+                        break
+                elif re.match(r'[Ee]xpired', pair):
+                    expires_at = datetime.strptime(pair.split('=')[0],
+                                                   '%a, %d-%b-%Y %H:%M:%S %Z')
+                    # Thu, 01-Jan-1970 00:00:01 GMT
+                    if datetime.utcnow() > expires_at:
+                        break
+                header.append(pairs[0])
+        if header:
+            self._headers.append(f'Cookie: {"; ".join(header)}')
 
     def _modify_data(self):
         charset = 'utf8'

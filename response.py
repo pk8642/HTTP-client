@@ -2,6 +2,7 @@ import re
 import gzip
 
 
+# TODO add handling codes
 def get_chunk_size(reader):
     hex_chunk_size = reader.readline().decode('utf8')
     if hex_chunk_size == '\r\n':
@@ -19,6 +20,7 @@ class Response:
         self.flag = HEAD_flag
 
         self.headers = {}  # i.e. 'Content-Type: text/html'
+        self.cookies = []  # cookie pairs
 
         self.filename = 'received'
         self.ext = 'html'  # if url endswith '.some_ext' it will replace this
@@ -66,21 +68,10 @@ class Response:
             self.response_headers += header
             key, value = header.split(': ')
             if key == 'Set-Cookie':
-                try:
-                    self.headers['self.cookie'] += f'{value}\r\n'
-                    header = reader.readline().decode('utf8')
-                    continue
-                except KeyError:
-                    pass
-            self.headers[key.casefold()] = value
+                self.cookies.append(value)
+            else:
+                self.headers[key.casefold()] = value
             header = reader.readline().decode('utf8')
-
-    def set_cookies(self):
-        try:
-            cookies = self.headers['set-cookies']
-        except KeyError:
-            return []
-        return cookies.split('\r\n')[-1]
 
     def save_to_file(self):
         with open(f'{self.filename}.{self.ext}', 'wb') as f:

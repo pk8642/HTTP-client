@@ -2,13 +2,14 @@ import socket
 import parse_line
 from request import Request
 from response import Response
-
+import pickle
 import re
 
-sockets = {}  # host: (socket, [cookies])
+sockets = {}  # host: socket
+cookies = {}  # host: [cookie-headers]
 
+COOKIES = 'cookies'  # file where cookies are saved
 
-#  serving opened sockets and their cookies with host as key
 
 def parse_uri(uri):
     path = '/'
@@ -26,6 +27,11 @@ def parse_uri(uri):
 
 if __name__ == '__main__':
     try:
+        try:
+            with open(COOKIES, 'r') as f:
+                cookies = pickle.load(f)
+        except FileNotFoundError:
+            pass
         while True:
             line = input('>').split()
             if re.match(r'cls|close', line[0]):
@@ -37,10 +43,7 @@ if __name__ == '__main__':
                 del args[0]
                 print(args)
                 request = Request(host, path, *args)
-                try:
-                    request.set_cookies(sockets[host][1])
-                except KeyError:
-                    pass
+                request.set_cookies(cookies)
             try:
                 sock = request.send_data(sockets)
             except socket.gaierror:
@@ -62,13 +65,11 @@ if __name__ == '__main__':
                 response.filename, response.ext = file.rsplit('.', 1)
             response.receive()
             if not response.connection:
-                sockets[host][0].close()
+                sockets[host].close()
                 del sockets[host]
                 print('closed connection with:', host)
-            else:
-                cookies = response.set_cookies()
-                sockets[host][1].clear()
-                sockets[host][1].extend(cookies)
+            if response.cookies:
+                cookies[host] = response.cookies
 
             ask_about_print = input(
                 'Would you like to print response?(y/n): '
@@ -83,7 +84,10 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('closing connections')
         for host in sockets:
-            sockets[host][0].close()
+            sockets[host].close()
             print('closed connection with:', host)
         print('all done')
         print('client closed')
+
+    if len(cookies) > 0:
+        pickle.dump(cookies, COOKIES)
