@@ -56,13 +56,6 @@ if __name__ == '__main__':
                 flag = False
             response = Response(sock, flag)
 
-            try:
-                ext_dot_index = path.rindex('.')
-            except ValueError:
-                ext_dot_index = 0
-            if ext_dot_index > path.rindex('/'):
-                file = path.rsplit('/', 1)[1]
-                response.filename, response.ext = file.rsplit('.', 1)
             response.receive()
             if not response.connection:
                 sockets[host].close()
@@ -83,7 +76,7 @@ if __name__ == '__main__':
                 'Would you like to save response to a file?(y/n): '
             )
             if re.match(r'[Yy]', ask_about_file):
-                response.save_to_file()
+                response.save_to_file(path)
     except KeyboardInterrupt:
         print('closing connections')
         for host in sockets:

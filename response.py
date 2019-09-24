@@ -22,7 +22,7 @@ class Response:
         self.headers = {}  # i.e. 'Content-Type: text/html'
         self.cookies = []  # cookie pairs
 
-        self.filename = 'received'
+        self.filename = None
         self.ext = 'html'  # if url endswith '.some_ext' it will replace this
         self.charset = None
         self.connection = True
@@ -73,11 +73,31 @@ class Response:
                 self.headers[key.casefold()] = value
             header = reader.readline().decode('utf8')
 
-    def save_to_file(self):
+    def save_to_file(self, path):
+        self.get_filename(path)
         with open(f'{self.filename}.{self.ext}', 'wb') as f:
             f.write(self.response_body)
             f.flush()
         print('file is ready to be seen')
+
+    def get_filename(self, path):
+        try:
+            ext_dot_index = path.rindex('.')
+        except ValueError:
+            ext_dot_index = 0
+        if ext_dot_index > path.rindex('/'):
+            file = path.rsplit('/', 1)[1]
+            self.filename, self.ext = file.rsplit('.', 1)
+            return
+
+        if not self.filename:
+            try:
+                self.filename = re.search(
+                    rb'<title>.*</title>',
+                    self.response_body
+                )[0][7:-8].decode(self.charset)
+            except ValueError:
+                self.filename = 'received'
 
     def print(self):
         print(self.response_headers)
