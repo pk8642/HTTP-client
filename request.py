@@ -80,7 +80,9 @@ class Request:
                 gzip.compress(self._body)
 
         if self._body:
-            self._headers.append(f'Content-Length: {len(self._body - 4)}\r\n')
+            self._headers.append(f'Content-Length: {len(self._body) - 4}\r\n')
+        elif len(self._headers) > 0:
+            self._headers[-1] += '\r\n'
 
     def _form_message(self, path, host):
         self._headers = '\r\n'.join(self._headers)

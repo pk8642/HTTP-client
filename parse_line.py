@@ -1,5 +1,7 @@
 import argparse
 
+import re
+
 
 def create_parser():
     parser = argparse.ArgumentParser(
@@ -34,7 +36,7 @@ def convert_to_list(namespace):
     return [
         namespace.uri[0],
         namespace.method,
-        ' '.join(parse_content(namespace.body)),
+        '\r\n'.join(parse_content(namespace.body)),
         parse_content(namespace.headers),
         namespace.timeout
     ]
@@ -42,17 +44,30 @@ def convert_to_list(namespace):
 
 def parse_content(content):
     if not content:
-        return ''
+        return []
+    elif len(content) == 1:
+        return [content[0][1:-1]]
     _content = []
     _part = None
     try:
         for part in content:
-            if part.endswith('"'):
-                _content.append(f'{_part[1:]} {part[:-1]}')
+            if part.endswith('"') and part[-2] != '/':
+                _part += ' ' + part
+                _part = delete_slashes(_part)
+                _content.append(_part[1:-1])
             elif part.startswith('"'):
                 _part = part
             else:
                 _part += ' ' + part
     except ValueError:
-        print('something wrong with headers')
+        print('something wrong with content')
     return _content
+
+def delete_slashes(string):
+    shielding = ['\'', '/"']
+    for char in shielding:
+        if char == '\'':
+            string = string.replace(char, "'")
+        else:
+            string = string.replace(char, '"')
+    return string
