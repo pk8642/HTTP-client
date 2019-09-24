@@ -28,7 +28,7 @@ def parse_uri(uri):
 if __name__ == '__main__':
     try:
         try:
-            with open(COOKIES, 'r') as f:
+            with open(COOKIES, 'rb') as f:
                 cookies = pickle.load(f)
         except FileNotFoundError:
             pass
@@ -69,7 +69,10 @@ if __name__ == '__main__':
                 del sockets[host]
                 print('closed connection with:', host)
             if response.cookies:
-                cookies[host] = response.cookies
+                cookies[host] = []
+                for cookie in response.cookies:
+                    if not 'deleted' in cookie:
+                        cookies[host].append(cookie)
 
             ask_about_print = input(
                 'Would you like to print response?(y/n): '
@@ -90,4 +93,5 @@ if __name__ == '__main__':
         print('client closed')
 
     if len(cookies) > 0:
-        pickle.dump(cookies, COOKIES)
+        with open(COOKIES, 'wb') as f:
+            pickle.dump(cookies, f)

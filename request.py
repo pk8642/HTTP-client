@@ -42,21 +42,39 @@ class Request:
         return sock
 
     def set_cookies(self, cookies):
+        try:
+            cookies[self._host]
+        except KeyError:
+            return
+
         header = []
-        for cookie in cookies:
-            pairs = cookie.split('; ')
-            for i in range(len(pairs), 0, -1):
+        time_parse = ['%a, %d %b %Y %H:%M:%S %Z', '%a, %d-%b-%Y %H:%M:%S %Z',
+                      '&a %b %d %H:%M:%S %Y']
+
+        for cookie in cookies[self._host]:
+            pairs = cookie[:-2].split('; ')
+            for i in range(len(pairs) - 1, -1, -1):
                 pair = pairs[i]
+                if i == 0:
+                    header.append(pairs[i])
+
                 if re.match(r'[Pp]ath', pair):
-                    if not self._host.startswith(pair.split('=')[0]):
+                    if not self._path.startswith(pair.split('=')[1]):
                         break
-                elif re.match(r'[Ee]xpired', pair):
-                    expires_at = datetime.strptime(pair.split('=')[0],
-                                                   '%a, %d-%b-%Y %H:%M:%S %Z')
-                    # Thu, 01-Jan-1970 00:00:01 GMT
+                elif re.match(r'[Ee]xpires', pair):
+                    expires_at = None
+                    for time in time_parse:
+                        try:
+                            expires_at = datetime.strptime(pair.split('=')[1],
+                                                           time)
+                            break
+                        except ValueError:
+                            continue
+                    if not expires_at:
+                        print('I\'ve got bad time')
+
                     if datetime.utcnow() > expires_at:
                         break
-                header.append(pairs[0])
         if header:
             self._headers.append(f'Cookie: {"; ".join(header)}')
 
