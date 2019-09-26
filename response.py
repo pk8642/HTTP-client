@@ -2,7 +2,6 @@ import re
 import gzip
 
 
-# TODO add handling codes
 def get_chunk_size(reader):
     hex_chunk_size = reader.readline().decode('utf8')
     if hex_chunk_size == '\r\n':
@@ -31,12 +30,23 @@ class Response:
         with self.sock.makefile(mode='rb') as fd:
             self.receive_headers(fd)
 
+            try:
+                connection = self.headers['connection']
+                if re.match(r'close', connection):
+                    self.connection = False
+            except KeyError:
+                pass
+
             if not self.flag:  # if it's HEAD request, there's no body
                 try:
                     content_length = self.headers['content-length']
                     self.static_recv(fd, int(content_length))
                 except KeyError:
-                    self.dynamic_recv(fd)
+                    try:
+                        _ = self.headers['transfer-encoding']
+                        self.dynamic_recv(fd)
+                    except KeyError:
+                        return
 
                 try:
                     encoding = self.headers['accept-encoding']
@@ -53,25 +63,20 @@ class Response:
                 except KeyError:
                     pass
 
-            try:
-                connection = self.headers['connection']
-                if re.match(r'close', connection):
-                    self.connection = False
-            except KeyError:
-                pass
-
     def receive_headers(self, reader):
         self.headers['code'] = reader.readline().decode('utf8')
         print(self.headers['code'])
         header = reader.readline().decode('utf8')
         while header != '\r\n':
             self.response_headers += header
-            key, value = header.split(': ')
+            key, value = header.split(': ', 2)
             if key == 'Set-Cookie':
-                self.cookies.append(value)
+                if not 'deleted' in value:
+                    self.cookies.append(value)
             else:
                 self.headers[key.casefold()] = value
             header = reader.readline().decode('utf8')
+        print(self.response_headers)
 
     def save_to_file(self, path):
         self.get_filename(path)

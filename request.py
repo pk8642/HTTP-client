@@ -37,7 +37,6 @@ class Request:
         self._modify_data()
 
         msg = self._form_message(self._path, self._host)
-        print(msg)
         sock.sendall(msg + self._body)
         return sock
 
