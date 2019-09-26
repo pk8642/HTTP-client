@@ -64,7 +64,7 @@ if __name__ == '__main__':
         except FileNotFoundError:
             pass
         while True:
-            line = input('>').split()
+            line = input('\r\n>').split()
             if re.match(r'cls|close', line[0]):
                 raise KeyboardInterrupt
             else:

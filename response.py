@@ -1,5 +1,6 @@
 import re
 import gzip
+from tqdm import tqdm
 
 
 def get_chunk_size(reader):
@@ -47,6 +48,8 @@ class Response:
                         self.dynamic_recv(fd)
                     except KeyError:
                         return
+                print(f"\r\n{self.headers['code']}")
+                print(self.response_headers)
 
                 try:
                     encoding = self.headers['accept-encoding']
@@ -65,7 +68,6 @@ class Response:
 
     def receive_headers(self, reader):
         self.headers['code'] = reader.readline().decode('utf8')
-        print(self.headers['code'])
         header = reader.readline().decode('utf8')
         while header != '\r\n':
             self.response_headers += header
@@ -76,7 +78,6 @@ class Response:
             else:
                 self.headers[key.casefold()] = value
             header = reader.readline().decode('utf8')
-        print(self.response_headers)
 
     def save_to_file(self, path):
         self.get_filename(path)
@@ -112,10 +113,14 @@ class Response:
             print(self.response_body)
 
     def static_recv(self, reader, length):
-        self.response_body = reader.read(length)
+        pbar = tqdm(total=length)
+        for i in range(length):
+            self.response_body = reader.read(1)
+            pbar.update(1)
+        pbar.close()
 
     def dynamic_recv(self, reader):
         chunk_size = get_chunk_size(reader)
         while chunk_size != 0:
-            self.response_body += reader.read(chunk_size)
+            self.static_recv(reader, chunk_size)
             chunk_size = get_chunk_size(reader)
