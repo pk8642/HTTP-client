@@ -17,7 +17,8 @@ def parse_uri(uri):
     if re.match('http://', uri):
         uri = uri[7:]
     elif re.match(r'https://', uri):
-        raise ValueError('I can\'t work with https :(')
+        print('I can\'t work with https :(')
+        raise ValueError()
 
     _host = uri.split('/')[0]
     if '/' in uri:
@@ -78,12 +79,15 @@ if __name__ == '__main__':
             if re.search(r'3\d\d', response.headers['code']):
                 try:
                     addr = response.headers['location']
-                    confirm = input(f'Confirm to go to this addr: {addr}: ')
+                    confirm = input(f'Confirm to go to this addr: '
+                                    f'{addr[:-2]}: ')
                     if confirm == 'y':
                         sockets[host].close()
                         del sockets[host]
-                        sock, host, path = send(addr.split())
-                        # sock.recv(1024)
+                        try:
+                            sock, host, path = send(addr.split())
+                        except ValueError:
+                            continue
                         response = get(sock, host, confirm)
                     else:
                         continue

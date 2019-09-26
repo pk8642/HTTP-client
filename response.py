@@ -1,5 +1,7 @@
 import re
 import gzip
+import time
+
 from tqdm import tqdm
 
 
@@ -106,18 +108,16 @@ class Response:
                 self.filename = 'received'
 
     def print(self):
-        print(self.response_headers)
         if self.charset is not None:
             print(self.response_body.decode(self.charset))
         else:
             print(self.response_body)
 
     def static_recv(self, reader, length):
-        pbar = tqdm(total=length)
-        for i in range(length):
-            self.response_body = reader.read(1)
-            pbar.update(1)
-        pbar.close()
+        with tqdm(total=length) as pbar:
+            for i in range(length):
+                self.response_body += reader.read(1)
+                pbar.update(1)
 
     def dynamic_recv(self, reader):
         chunk_size = get_chunk_size(reader)
