@@ -12,12 +12,10 @@ def get_chunk_size(reader):
 
 
 class Response:
-    def __init__(self, sock, HEAD_flag):
+    def __init__(self, sock):
         self.sock = sock
         self.response_headers = ''
         self.response_body = b''
-
-        self.flag = HEAD_flag
 
         self.headers = {}  # i.e. 'Content-Type: text/html'
         self.cookies = []  # cookie pairs
@@ -38,33 +36,31 @@ class Response:
             except KeyError:
                 pass
 
-            if not self.flag:  # if it's HEAD request, there's no body
+            try:
+                content_length = self.headers['content-length']
+                self.static_recv(fd, int(content_length))
+            except KeyError:
                 try:
-                    content_length = self.headers['content-length']
-                    self.static_recv(fd, int(content_length))
+                    _ = self.headers['transfer-encoding']
+                    self.dynamic_recv(fd)
                 except KeyError:
-                    try:
-                        _ = self.headers['transfer-encoding']
-                        self.dynamic_recv(fd)
-                    except KeyError:
-                        return
-                print(f"\r\n{self.headers['code']}")
-                print(self.response_headers)
+                    return
+            self.print_headers()
 
-                try:
-                    encoding = self.headers['accept-encoding']
-                    if 'gzip' in encoding:
-                        self.response_body = gzip.decompress(
-                            self.response_body)
-                except KeyError:
-                    pass
+            try:
+                encoding = self.headers['accept-encoding']
+                if 'gzip' in encoding:
+                    self.response_body = gzip.decompress(
+                        self.response_body)
+            except KeyError:
+                pass
 
-                try:
-                    cont_type = self.headers['content-type']
-                    if re.search(r'charset', cont_type) is not None:
-                        self.charset = cont_type.split('=')[1]
-                except KeyError:
-                    pass
+            try:
+                cont_type = self.headers['content-type']
+                if re.search(r'charset', cont_type) is not None:
+                    self.charset = cont_type.split('=')[1]
+            except KeyError:
+                pass
 
     def receive_headers(self, reader):
         self.headers['code'] = reader.readline().decode('utf8')
@@ -100,10 +96,14 @@ class Response:
 
         if not self.filename:
             try:
-                self.filename = re.search(
+                filename = re.search(
                     rb'<title>.*</title>',
                     self.response_body
-                )[0][7:-8].decode(self.charset)
+                )
+                if filename is None:
+                    raise ValueError
+
+                self.filename = filename[0][7:-8].decode(self.charset)
             except ValueError:
                 self.filename = 'received'
 
@@ -112,6 +112,10 @@ class Response:
             print(self.response_body.decode(self.charset))
         else:
             print(self.response_body)
+
+    def print_headers(self):
+        print(f"\r\n{self.headers['code']}")
+        print(self.response_headers)
 
     def static_recv(self, reader, length, pbar=None):
         if not pbar:

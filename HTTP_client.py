@@ -42,13 +42,13 @@ def send(_line):
 
 
 def get(_sock, _host, _line):
+    _response = Response(_sock)
     if re.search(r'HEAD', _line):
-        flag = True
+        _response.receive_headers(_sock.makefile(mode='rb'))
+        _response.print_headers()
     else:
-        flag = False
-    _response = Response(_sock, flag)
+        _response.receive()
 
-    _response.receive()
     if not _response.connection:
         _response.print()
         sockets[_host].close()
@@ -78,17 +78,18 @@ if __name__ == '__main__':
 
             while re.search(r'3\d\d', response.headers['code']):
                 try:
-                    addr = response.headers['location']
+                    addr = response.headers['location'][:-2]
                     confirm = input(f'Confirm to go to this addr: '
-                                    f'{addr[:-2]}: ')
+                                    f'{addr}: ')
                     if confirm == 'y':
                         sockets[host].close()
                         del sockets[host]
                         try:
-                            sock, host, path = send(addr.split())
+                            line[0] = addr
+                            sock, host, path = send(line)
                         except ValueError:
                             continue
-                        response = get(sock, host, confirm)
+                        response = get(sock, host, ' '.join(line))
                     else:
                         continue
                 except KeyError:

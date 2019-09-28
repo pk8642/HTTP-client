@@ -1,7 +1,5 @@
 import argparse
 
-import re
-
 
 def create_parser():
     parser = argparse.ArgumentParser(
