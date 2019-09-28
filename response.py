@@ -1,7 +1,5 @@
 import re
 import gzip
-import time
-
 from tqdm import tqdm
 
 
@@ -73,9 +71,11 @@ class Response:
         header = reader.readline().decode('utf8')
         while header != '\r\n':
             self.response_headers += header
-            key, value = header.split(': ', 2)
+            values = header.split(': ')
+            key = values[0]
+            value = ':'.join(values[1:])
             if key == 'Set-Cookie':
-                if not 'deleted' in value:
+                if 'deleted' not in value:
                     self.cookies.append(value)
             else:
                 self.headers[key.casefold()] = value
@@ -113,14 +113,29 @@ class Response:
         else:
             print(self.response_body)
 
-    def static_recv(self, reader, length):
-        with tqdm(total=length) as pbar:
-            for i in range(length):
-                self.response_body += reader.read(1)
-                pbar.update(1)
+    def static_recv(self, reader, length, pbar=None):
+        if not pbar:
+            pbar = tqdm(total=length)
+        count_of_updates = 11
+        fragment = length // count_of_updates
+        remain = length % count_of_updates
+        for i in range(count_of_updates):
+            self.response_body += reader.read(fragment)
+            pbar.update(fragment)
+        self.response_body += reader.read(remain)
+        pbar.update(remain)
+        if pbar.total == length:
+            pbar.close()
 
     def dynamic_recv(self, reader):
+        pbar = tqdm(total=65536)
         chunk_size = get_chunk_size(reader)
         while chunk_size != 0:
-            self.static_recv(reader, chunk_size)
+            if len(self.response_body) + chunk_size > pbar.total:
+                raising_total = (len(self.response_body) + chunk_size) * 2
+                pbar.total += raising_total
+            self.static_recv(reader, chunk_size, pbar)
             chunk_size = get_chunk_size(reader)
+
+        pbar.total = len(self.response_body)
+        pbar.close()

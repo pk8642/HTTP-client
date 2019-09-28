@@ -63,6 +63,7 @@ def parse_content(content):
         print('something wrong with content')
     return _content
 
+
 def delete_slashes(string):
     shielding = ['\'', '/"']
     for char in shielding:

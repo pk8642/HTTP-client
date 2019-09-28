@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
             response = get(sock, host, ' '.join(line))
 
-            if re.search(r'3\d\d', response.headers['code']):
+            while re.search(r'3\d\d', response.headers['code']):
                 try:
                     addr = response.headers['location']
                     confirm = input(f'Confirm to go to this addr: '
