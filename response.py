@@ -47,20 +47,20 @@ class Response:
                     return
             self.print_headers()
 
-            try:
-                encoding = self.headers['accept-encoding']
-                if 'gzip' in encoding:
-                    self.response_body = gzip.decompress(
-                        self.response_body)
-            except KeyError:
-                pass
+        try:
+            encoding = self.headers['accept-encoding']
+            if 'gzip' in encoding:
+                self.response_body = gzip.decompress(
+                    self.response_body)
+        except KeyError:
+            pass
 
-            try:
-                cont_type = self.headers['content-type']
-                if re.search(r'charset', cont_type) is not None:
-                    self.charset = cont_type.split('=')[1]
-            except KeyError:
-                pass
+        try:
+            cont_type = self.headers['content-type']
+            if re.search(r'charset', cont_type) is not None:
+                self.charset = cont_type.split('=')[1]
+        except KeyError:
+            pass
 
     def receive_headers(self, reader):
         self.headers['code'] = reader.readline().decode('utf8')

@@ -34,8 +34,8 @@ def convert_to_list(namespace):
     return [
         namespace.uri[0],
         namespace.method,
-        '\r\n'.join(parse_content(namespace.body)),
         parse_content(namespace.headers),
+        '\r\n'.join(parse_content(namespace.body)),
         namespace.timeout
     ]
 

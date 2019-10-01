@@ -26,8 +26,8 @@ def parse_uri(uri):
     return _host, _path
 
 
-def send(_line):
-    namespace = parse_line.create_parser().parse_args(_line)
+def send(_lines):
+    namespace = parse_line.create_parser().parse_args(_lines)
     args = parse_line.convert_to_list(namespace)
     _host, _path = parse_uri(args[0])
     del args[0]
@@ -57,10 +57,11 @@ def get(_sock, _host, _line):
     return _response
 
 
-if __name__ == '__main__':
+def main():
     try:
         try:
             with open(COOKIES, 'rb') as f:
+                global cookies
                 cookies = pickle.load(f)
         except FileNotFoundError:
             pass
@@ -118,3 +119,7 @@ if __name__ == '__main__':
     if len(cookies) > 0:
         with open(COOKIES, 'wb') as f:
             pickle.dump(cookies, f)
+
+
+if __name__ == '__main__':
+    main()
