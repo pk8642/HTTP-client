@@ -7,6 +7,20 @@ from response import Response
 import io
 
 
+def get_fake_socket(text=b'', to=15):
+    sock = mock.Mock()
+    sock.makefile.return_value = io.BytesIO(text)
+    sock.sendall.return_value = None
+    sock.settimeout.return_value = to
+    sock.connect.return_value = None
+    sock.close.return_value = None
+    return sock
+
+
+def get_fake_reader(text=b''):
+    return io.BytesIO(text)
+
+
 class TestArguments(TestCase):
     def check_args(self, args, host=None):
         if host:
@@ -63,20 +77,6 @@ class TestArguments(TestCase):
     def test_parsing_content(self):
         line = 'www.example.com -b "This is /"body/" in" "2 lines"'
         self.check_parsing_input(line.split())
-
-
-def get_fake_socket(text=b'', to=15):
-    sock = mock.Mock()
-    sock.makefile.return_value = io.BytesIO(text)
-    sock.sendall.return_value = None
-    sock.settimeout.return_value = to
-    sock.connect.return_value = None
-    sock.text = text
-    return sock
-
-
-def get_fake_reader(text=b''):
-    return io.BytesIO(text)
 
 
 class MockResponse:
@@ -380,6 +380,52 @@ class TestFunctionalityRequest(TestCase):
         request.set_cookies(cookies)
 
         self.assertEqual(request.headers, ['Cookie: some-cookie=value'])
+
+
+class TestClient(TestCase):
+    def test_client_with_base_arguments(self):
+        host = 'example.com'
+        usr_input = [host, 'n', 'n', 'cls']
+        resp = b'HTTP 200 OK\r\nContent-Length: 4\r\n' \
+               b'Content-Type: text/html; charset=utf8\r\n' \
+               b'\r\nbody\r\n\r\n'
+
+        fake_sock = get_fake_socket(resp)
+
+        with mock.patch('builtins.input', side_effect=usr_input), \
+             mock.patch('socket.socket', side_effect=lambda: fake_sock):
+            HTTP_client.main()
+
+        fake_sock.connect.assert_called_once()
+        fake_sock.sendall.assert_called_with(b'GET / HTTP/1.1\r\nHost: '
+                                             b'example.com\r\n\r\n')
+
+    def test_client_with_3xx_exception(self):
+        host = 'example.com'
+        usr_input = [host, 'y', 'n', 'n', 'cls']
+        bad_resp = b'HTTP 301 Moved Permanently\r\n' \
+                   b'Location: example.org\r\n\r\n'
+        good_resp = b'HTTP 200 OK\r\nContent-Length: 7\r\n' \
+                    b'Content-Type: text/html; charset=utf8\r\n' \
+                    b'\r\nnot bad\r\n\r\n'
+        bad_fake_sock = get_fake_socket(bad_resp)
+        good_fake_sock = get_fake_socket(good_resp)
+        fake_sockets = [bad_fake_sock,
+                        good_fake_sock]
+
+        with mock.patch('builtins.input', side_effect=usr_input), \
+             mock.patch('socket.socket', side_effect=fake_sockets):
+            HTTP_client.main()
+
+        bad_fake_sock.makefile.assert_called_once()
+        bad_fake_sock.close.assert_called_once()
+        bad_fake_sock.connect.assert_called_once()
+        bad_fake_sock.sendall.assert_called_once()
+
+        good_fake_sock.makefile.assert_called_once()
+        good_fake_sock.close.assert_called_once()
+        good_fake_sock.connect.assert_called_once()
+        good_fake_sock.sendall.assert_called_once()
 
 
 if __name__ == '__main__':
