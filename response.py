@@ -30,13 +30,6 @@ class Response:
             self.receive_headers(fd)
 
             try:
-                connection = self.headers['connection']
-                if re.match(r'close', connection):
-                    self.connection = False
-            except KeyError:
-                pass
-
-            try:
                 content_length = self.headers['content-length']
                 self.static_recv(fd, int(content_length))
             except KeyError:
@@ -73,6 +66,9 @@ class Response:
             if key == 'Set-Cookie':
                 if 'deleted' not in value:
                     self.cookies.append(value)
+            elif key == 'Connection':
+                if re.match(r'[Cc]lose', value):
+                    self.connection = False
             else:
                 self.headers[key.casefold()] = value
             header = reader.readline().decode('utf8')

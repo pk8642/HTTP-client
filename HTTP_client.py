@@ -44,8 +44,10 @@ def send(_lines):
 def get(_sock, _host, _line):
     _response = Response(_sock)
     if re.search(r'HEAD', _line):
-        _response.receive_headers(_sock.makefile(mode='rb'))
+        reader = _sock.makefile(mode='rb')
+        _response.receive_headers(reader)
         _response.print_headers()
+        reader.close()
     else:
         _response.receive()
 
@@ -73,9 +75,12 @@ def main():
                 try:
                     sock, host, path = send(line)
                 except socket.gaierror:
+                    print('Timeout')
                     continue
-
-            response = get(sock, host, ' '.join(line))
+            try:
+                response = get(sock, host, ' '.join(line))
+            except socket.timeout:
+                continue
 
             while re.search(r'3\d\d', response.headers['code']):
                 try:
@@ -96,7 +101,8 @@ def main():
                 except KeyError:
                     print('there\'s no address to go')
 
-            cookies[host] = response.cookies
+            if response.cookies:
+                cookies[host] = response.cookies
 
             ask_about_print = input(
                 'Would you like to print response?(y/n): '

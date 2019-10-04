@@ -394,6 +394,8 @@ class TestClient(TestCase):
 
         with mock.patch('builtins.input', side_effect=usr_input), \
              mock.patch('socket.socket', side_effect=lambda: fake_sock):
+            HTTP_client.sockets = {}
+            HTTP_client.cookies = {}
             HTTP_client.main()
 
         fake_sock.connect.assert_called_once()
@@ -415,6 +417,8 @@ class TestClient(TestCase):
 
         with mock.patch('builtins.input', side_effect=usr_input), \
              mock.patch('socket.socket', side_effect=fake_sockets):
+            HTTP_client.sockets = {}
+            HTTP_client.cookies = {}
             HTTP_client.main()
 
         bad_fake_sock.makefile.assert_called_once()
@@ -426,6 +430,28 @@ class TestClient(TestCase):
         good_fake_sock.close.assert_called_once()
         good_fake_sock.connect.assert_called_once()
         good_fake_sock.sendall.assert_called_once()
+
+    def test_with_head_method(self):
+        host = 'http://example.com/'
+        method = '-m HEAD'
+        usr_input = [f'{host} {method}', 'n', 'n', 'cls']
+
+        resp = b'HTTP 200 OK\r\nConnection: close\r\n\r\n'
+
+        fake_sock = get_fake_socket(resp)
+
+        with mock.patch('builtins.input', side_effect=usr_input), \
+             mock.patch('socket.socket', side_effect=lambda: fake_sock):
+            HTTP_client.sockets = {}
+            HTTP_client.cookies = {}
+            HTTP_client.main()
+
+        fake_sock.sendall.assert_called_with(
+            b'HEAD / HTTP/1.1\r\nHost: example.com\r\n\r\n')
+        fake_sock.makefile.assert_called_once()
+        fake_sock.close.assert_called_once()
+        fake_sock.connect.assert_called_once()
+        fake_sock.sendall.assert_called_once()
 
 
 if __name__ == '__main__':
